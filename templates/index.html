@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .custom-file-upload {
+            display: block;
+            border: 2px solid #008CBA;
+            color: #008CBA;
+            background-color: #fff;
+            padding: 10px 15px;
+            text-align: center;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #preview {
+            margin-top: 20px;
+        }
+        #resume-preview {
+            max-width: 100%;
+            height: auto;
+        }
+        #submit-btn {
+            margin-top: 20px;
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #008CBA;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #recommendations {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .job-card {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .job-card h3 {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Resume Analyzer</h1>
+        <form id="upload-form" enctype="multipart/form-data">
+            <label for="resume" class="custom-file-upload">
+                Upload Resume
+            </label>
+            <input type="file" id="resume" name="resume" accept=".pdf" required>
+        </form>
+        <div id="preview" style="display: none;">
+            <h2>Resume Preview</h2>
+            <img id="resume-preview" src="" alt="Resume Preview">
+        </div>
+        <button id="submit-btn" onclick="submitForm()">Analyze Resume</button>
+        <div id="recommendations"></div>
+    </div>
+
+    <script>
+        function submitForm() {
+            const form = document.getElementById("upload-form");
+            const formData = new FormData(form);
+
+            fetch('/analyze_resume', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (Array.isArray(data) && data.length > 0) {
+                    displayRecommendations(data[0]);
+                } else {
+                    console.error('Expected an array with job data, but received:', data);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function displayRecommendations(data) {
+            const recommendationsContainer = document.getElementById('recommendations');
+            recommendationsContainer.innerHTML = ''; // Clear previous recommendations
+
+            const numberOfJobs = data.job_id.length;
+
+            for (let i = 0; i < numberOfJobs; i++) {
+                const jobCard = document.createElement('div');
+                jobCard.className = 'job-card';
+
+                jobCard.innerHTML = `
+                    <h3>Job ID: ${data.job_id[i]}</h3>
+                    <p><strong>Title:</strong> ${data.title[i]}</p>
+                    <p><strong>Role:</strong> ${data.role[i]}</p>
+                    <p><strong>Description:</strong> ${data.description[i]}</p>
+                    <p><strong>Skills Required:</strong> ${data.skills[i]}</p>
+                `;
+
+                recommendationsContainer.appendChild(jobCard);
+            }
+        }
+
+        // Preview uploaded resume
+        document.getElementById('resume').addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.getElementById('preview');
+                    preview.style.display = 'block';
+                    const resumePreview = document.getElementById('resume-preview');
+                    resumePreview.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>
